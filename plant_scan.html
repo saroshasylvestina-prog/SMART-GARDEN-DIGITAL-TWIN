@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plant Health Scanner - Smart Garden</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            padding: 20px;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: white;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.9);
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+
+        .back-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            transition: background 0.3s;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .upload-section {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .upload-area {
+            border: 3px dashed rgba(255, 255, 255, 0.5);
+            border-radius: 15px;
+            padding: 40px;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .upload-area:hover {
+            border-color: rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .upload-area.dragover {
+            border-color: rgba(76, 175, 80, 0.8);
+            background: rgba(76, 175, 80, 0.1);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .upload-btn {
+            padding: 15px 40px;
+            background: rgba(76, 175, 80, 0.8);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin: 10px;
+        }
+
+        .upload-btn:hover {
+            background: rgba(76, 175, 80, 1);
+        }
+
+        .preview-section {
+            display: none;
+            margin: 30px 0;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 15px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            margin-bottom: 20px;
+        }
+
+        #webcamOverlay {
+            transition: all 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            #webcamOverlay {
+                width: 85% !important;
+                height: 65% !important;
+            }
+            
+            #webcamOverlay div {
+                font-size: 0.8em !important;
+                top: -20px !important;
+            }
+        }
+
+        .result-section {
+            display: none;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 30px;
+            color: white;
+        }
+
+        .disease-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .severity-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .severity-none { background: rgba(76, 175, 80, 0.8); }
+        .severity-mild { background: rgba(255, 193, 7, 0.8); }
+        .severity-moderate { background: rgba(255, 152, 0, 0.8); }
+        .severity-severe { background: rgba(244, 67, 54, 0.8); }
+
+        .solutions-list {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+
+        .solutions-list li {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.2em;
+        }
+
+        .disease-info {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-btn">← Back to Dashboard</a>
+        
+        <h1>🌿 Plant Health Scanner</h1>
+        <p class="subtitle">Upload a photo of your plant to detect diseases and get treatment solutions</p>
+
+        <div class="upload-section">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <button class="upload-btn" onclick="toggleWebcam()" id="webcamToggleBtn" style="background: rgba(33, 150, 243, 0.8); font-size: 1.2em; padding: 20px 50px;">
+                    📹 Use Webcam
+                </button>
+            </div>
+            
+            <!-- Webcam Section -->
+            <div id="webcamSection" style="display: none; margin: 20px 0; text-align: center;">
+                <div style="position: relative; display: inline-block; max-width: 100%;">
+                    <video id="webcamVideo" autoplay playsinline class="preview-image" style="background: #000; display: block;"></video>
+                    <!-- Rectangle Overlay -->
+                    <div id="webcamOverlay" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; height: 70%; border: 3px solid rgba(76, 175, 80, 0.8); border-radius: 10px; pointer-events: none; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4); z-index: 10;">
+                        <div style="position: absolute; top: -25px; left: 50%; transform: translateX(-50%); color: rgba(76, 175, 80, 1); font-size: 0.9em; font-weight: bold; white-space: nowrap; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);">
+                            📍 Position plant here
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top: 15px;">
+                    <button class="upload-btn" onclick="captureFromWebcam()" style="background: rgba(76, 175, 80, 0.8); margin-right: 10px;">
+                        📸 Capture Photo
+                    </button>
+                    <button class="upload-btn" onclick="stopWebcam()" style="background: rgba(244, 67, 54, 0.8);">
+                        ⏹️ Stop Camera
+                    </button>
+                </div>
+            </div>
+            
+            <button class="upload-btn" onclick="scanImage()" id="scanBtn" style="display: none;">🔍 Scan for Diseases</button>
+        </div>
+
+        <div class="preview-section" id="previewSection">
+            <img id="previewImg" class="preview-image" alt="Plant Preview">
+            <div style="margin-top: 15px;">
+                <button class="upload-btn" onclick="clearPreview()" style="background: rgba(158, 158, 158, 0.8);">
+                    🗑️ Clear Image
+                </button>
+            </div>
+        </div>
+
+        <div class="result-section" id="resultSection">
+            <!-- Results will be displayed here -->
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+        let webcamStream = null;
+        let webcamActive = false;
+
+        function toggleWebcam() {
+            if (webcamActive) {
+                stopWebcam();
+            } else {
+                startWebcam();
+            }
+        }
+
+        function startWebcam() {
+            const video = document.getElementById('webcamVideo');
+            const webcamSection = document.getElementById('webcamSection');
+            const toggleBtn = document.getElementById('webcamToggleBtn');
+            
+            // Hide preview if showing
+            document.getElementById('previewSection').style.display = 'none';
+            selectedFile = null;
+            
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: 'environment', // Use back camera on mobile if available
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    } 
+                })
+                .then(function(stream) {
+                    webcamStream = stream;
+                    video.srcObject = stream;
+                    webcamActive = true;
+                    webcamSection.style.display = 'block';
+                    toggleBtn.textContent = '⏹️ Stop Webcam';
+                    toggleBtn.style.background = 'rgba(244, 67, 54, 0.8)';
+                })
+                .catch(function(error) {
+                    console.error('Error accessing webcam:', error);
+                    alert('Could not access webcam. Please check permissions and try again.\n\nError: ' + error.message);
+                });
+            } else {
+                alert('Webcam is not supported in your browser. Please use the upload option instead.');
+            }
+        }
+
+        function stopWebcam() {
+            if (webcamStream) {
+                webcamStream.getTracks().forEach(track => track.stop());
+                webcamStream = null;
+            }
+            webcamActive = false;
+            document.getElementById('webcamSection').style.display = 'none';
+            document.getElementById('webcamVideo').srcObject = null;
+            const toggleBtn = document.getElementById('webcamToggleBtn');
+            toggleBtn.textContent = '📹 Use Webcam';
+            toggleBtn.style.background = 'rgba(33, 150, 243, 0.8)';
+        }
+
+        function captureFromWebcam() {
+            const video = document.getElementById('webcamVideo');
+            const canvas = document.createElement('canvas');
+            const preview = document.getElementById('previewImg');
+            const previewSection = document.getElementById('previewSection');
+            
+            if (!webcamActive || !video.videoWidth) {
+                alert('Webcam is not active. Please start the webcam first.');
+                return;
+            }
+            
+            // Set canvas dimensions to match video
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            // Draw video frame to canvas
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Convert canvas to blob
+            canvas.toBlob(function(blob) {
+                if (blob) {
+                    selectedFile = blob;
+                    preview.src = canvas.toDataURL('image/jpeg', 0.9);
+                    previewSection.style.display = 'block';
+                    document.getElementById('scanBtn').style.display = 'inline-block';
+                    document.getElementById('resultSection').style.display = 'none';
+                    
+                    // Optionally stop webcam after capture
+                    // stopWebcam();
+                } else {
+                    alert('Failed to capture image. Please try again.');
+                }
+            }, 'image/jpeg', 0.9);
+        }
+
+        function clearPreview() {
+            selectedFile = null;
+            document.getElementById('previewSection').style.display = 'none';
+            document.getElementById('previewImg').src = '';
+            document.getElementById('scanBtn').style.display = 'none';
+        }
+
+        function scanImage() {
+            if (!selectedFile) {
+                alert('Please select an image first');
+                return;
+            }
+
+            const resultSection = document.getElementById('resultSection');
+            resultSection.style.display = 'block';
+            resultSection.innerHTML = '<div class="loading">🔍 Scanning plant image... Please wait...</div>';
+
+            const formData = new FormData();
+            formData.append('image', selectedFile);
+
+            fetch('/api/plant/scan', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayResults(data);
+                } else {
+                    resultSection.innerHTML = `
+                        <div class="disease-card" style="background: rgba(244, 67, 54, 0.3);">
+                            <h3 style="color: white; margin-bottom: 10px;">❌ Error</h3>
+                            <p>${data.error || 'Failed to scan image'}</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                resultSection.innerHTML = `
+                    <div class="disease-card" style="background: rgba(244, 67, 54, 0.3);">
+                        <h3 style="color: white; margin-bottom: 10px;">❌ Error</h3>
+                        <p>Failed to scan image. Please try again.</p>
+                    </div>
+                `;
+            });
+        }
+
+        function displayResults(data) {
+            const disease = data.disease;
+            const resultSection = document.getElementById('resultSection');
+            
+            const severityColors = {
+                'none': 'severity-none',
+                'mild': 'severity-mild',
+                'moderate': 'severity-moderate',
+                'severe': 'severity-severe'
+            };
+
+            const healthIcon = data.health_status === 'healthy' ? '🟢' : '🔴';
+            const healthText = data.health_status === 'healthy' ? 'Healthy' : 'Unhealthy';
+            const isInsect = disease.type === 'insect' || disease.name.toLowerCase().includes('infestation') || 
+                           disease.name.toLowerCase().includes('aphid') || disease.name.toLowerCase().includes('mite') ||
+                           disease.name.toLowerCase().includes('bug') || disease.name.toLowerCase().includes('fly') ||
+                           disease.name.toLowerCase().includes('caterpillar') || disease.name.toLowerCase().includes('thrip') ||
+                           disease.name.toLowerCase().includes('gnat') || disease.name.toLowerCase().includes('scale');
+            const insectBadge = isInsect ? '<span class="severity-badge" style="background: rgba(255, 152, 0, 0.8); margin-left: 10px;">🐛 Insect</span>' : '';
+
+            let html = `
+                <div class="disease-card">
+                    <h2 style="color: white; font-size: 2em; margin-bottom: 15px;">
+                        ${healthIcon} ${disease.name}
+                        <span class="severity-badge ${severityColors[disease.severity]}">${disease.severity.charAt(0).toUpperCase() + disease.severity.slice(1)}</span>
+                        ${insectBadge}
+                    </h2>
+                    
+                    <div class="disease-info">
+                        <p><strong>Health Status:</strong> ${healthText}</p>
+                        <p><strong>Confidence:</strong> ${disease.confidence}%</p>
+                        <p><strong>Detected At:</strong> ${disease.detected_at}</p>
+                    </div>
+                </div>
+
+                <div class="disease-card">
+                    <h3 style="color: white; margin-bottom: 15px;">🔍 Symptoms</h3>
+                    <ul class="solutions-list" style="color: rgba(255, 255, 255, 0.9);">
+                        ${disease.symptoms.map(s => `<li>${s}</li>`).join('')}
+                    </ul>
+                </div>
+
+                <div class="disease-card">
+                    <h3 style="color: white; margin-bottom: 15px;">💊 Treatment</h3>
+                    <p style="color: rgba(255, 255, 255, 0.9); font-size: 1.1em; margin-bottom: 10px;">
+                        <strong>${disease.treatment}</strong>
+                    </p>
+                </div>
+
+                <div class="disease-card" style="background: rgba(76, 175, 80, 0.2); border-left: 4px solid rgba(76, 175, 80, 0.8);">
+                    <h3 style="color: white; margin-bottom: 15px;">✅ Recommended Solutions</h3>
+                    <ol class="solutions-list" style="color: rgba(255, 255, 255, 0.9);">
+                        ${disease.solutions.map(s => `<li style="margin-bottom: 12px; line-height: 1.8;">${s}</li>`).join('')}
+                    </ol>
+                </div>
+            `;
+
+            if (disease.all_detections && disease.all_detections.length > 1) {
+                html += `
+                    <div class="disease-card">
+                        <h3 style="color: white; margin-bottom: 15px;">🔬 Other Possible Conditions</h3>
+                        <ul class="solutions-list" style="color: rgba(255, 255, 255, 0.9);">
+                            ${disease.all_detections.slice(1).map(d => 
+                                `<li>${d.disease.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} (${d.confidence}% confidence)</li>`
+                            ).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            resultSection.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
+
